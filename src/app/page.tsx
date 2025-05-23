@@ -9,6 +9,8 @@ import SkillsSection from "@/components/skill-section";
 
 import type { Metadata } from "next";
 
+export const runtime = "edge";
+
 export const metadata: Metadata = {
   title: "Portfolio | Frontend Engineer",
   description:
