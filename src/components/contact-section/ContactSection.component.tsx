@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { motion } from "framer-motion";
-import { Github, Mail, MapPin, Send, Twitter } from "lucide-react";
+import { Github, MapPin, Send, Twitter } from "lucide-react";
 import { useState } from "react";
 
 export default function ContactSection() {
