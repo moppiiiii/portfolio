@@ -14,8 +14,7 @@ export const PROJECTS = [
     id: 2,
     title: "React Gantt Flow",
     category: "Component Library",
-    image:
-      "/placeholder.svg?height=600&width=800&query=react component library storybook",
+    image: "/icons/react-gantt-flow.svg",
     description: "Gantt chart library that can display lightning bolt lines",
     technologies: [
       "React",
@@ -31,7 +30,7 @@ export const PROJECTS = [
     id: 3,
     title: "kaeruyo",
     category: "Next.js Application",
-    image: "/placeholder-vko96.png",
+    image: "/icons/kaeruyo.svg",
     description: "Schedule sharing application with family members",
     technologies: [
       "Next.js",
@@ -49,7 +48,7 @@ export const PROJECTS = [
     id: 4,
     title: "Bio Build",
     category: "Next.js Application",
-    image: "/images/profile.png",
+    image: "/icons/bio-build.svg",
     description: "Muscle Training and Daily Record",
     technologies: [
       "Next.js",
