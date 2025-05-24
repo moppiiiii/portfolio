@@ -62,5 +62,5 @@ export const PROJECTS = [
     ],
     liveUrl: "",
     githubUrl: "https://github.com/moppiiiii/bio-build",
-  }
+  },
 ];
