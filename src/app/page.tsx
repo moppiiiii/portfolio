@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     description: "Frontend Engineer portfolio",
     images: [
       {
-        url: "/image/profile.png",
+        url: "/images/profile.png",
         width: 1200,
         height: 630,
         alt: "プロフィール画像",
