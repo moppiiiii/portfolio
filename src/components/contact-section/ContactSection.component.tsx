@@ -90,6 +90,7 @@ export default function ContactSection() {
                   href="https://github.com/moppiiiii"
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="Go to GitHub"
                   className="bg-gray-800 p-3 rounded-full hover:bg-purple-600 transition-colors duration-300"
                 >
                   <Github size={20} />
@@ -98,6 +99,7 @@ export default function ContactSection() {
                   href="https://x.com/moppiii_seal"
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="Go to Twitter"
                   className="bg-gray-800 p-3 rounded-full hover:bg-purple-600 transition-colors duration-300"
                 >
                   <Twitter size={20} />
