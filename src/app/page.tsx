@@ -13,8 +13,19 @@ export const runtime = "edge";
 
 export const metadata: Metadata = {
   title: "Portfolio | Frontend Engineer",
-  description:
-    "Frontend Engineer portfolio showcasing modern web applications and user interfaces",
+  description: "Frontend Engineer portfolio",
+  openGraph: {
+    title: "Portfolio | Frontend Engineer",
+    description: "Frontend Engineer portfolio",
+    images: [
+      {
+        url: "/image/profile.png",
+        width: 1200,
+        height: 630,
+        alt: "プロフィール画像",
+      },
+    ],
+  },
 };
 
 export default function Home() {
