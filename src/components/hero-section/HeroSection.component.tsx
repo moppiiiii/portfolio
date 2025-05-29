@@ -178,6 +178,7 @@ export default function HeroSection() {
       >
         <a
           href="#about"
+          aria-label="Go to About Section"
           className="text-gray-400 hover:text-white transition-colors"
         >
           <ArrowDown size={24} />
