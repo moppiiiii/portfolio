@@ -29,14 +29,11 @@ export const BACKEND_SKILLS = [
  * Styling & UI Skills
  */
 export const STYLING_UI_SKILLS = [
-  { name: "ESLint", icon: "/icons/eslint.svg" },
-  { name: "Vite", icon: "/icons/vite.svg" },
-  { name: "Git", icon: "/icons/git.svg" },
-  { name: "GitHub", icon: "/icons/github.svg" },
-  { name: "Chromatic", icon: "/icons/chromatic.svg" },
-  { name: "Knip", icon: "/icons/placeholder.svg" },
-  { name: "Prettier", icon: "/icons/placeholder.svg" },
-  { name: "Biome", icon: "/icons/placeholder.svg" },
+  { name: "Sass / Scss", icon: "/icons/sass.svg" },
+  { name: "Tailwind CSS", icon: "/icons/tailwind.svg" },
+  { name: "Material UI", icon: "/icons/material-ui.svg" },
+  { name: "Styled Components", icon: "/icons/placeholder.svg" },
+  { name: "Shadcn/UI", icon: "/icons/placeholder.svg" },
 ] as const;
 
 /**
@@ -45,6 +42,12 @@ export const STYLING_UI_SKILLS = [
 export const DEVELOPMENT_TOOLS_SKILLS = [
   { name: "ESLint", icon: "/icons/eslint.svg" },
   { name: "Vite", icon: "/icons/vite.svg" },
+  { name: "Git", icon: "/icons/git.svg" },
+  { name: "GitHub", icon: "/icons/github.svg" },
+  { name: "Chromatic", icon: "/icons/chromatic.svg" },
+  { name: "Knip", icon: "/icons/placeholder.svg" },
+  { name: "Prettier", icon: "/icons/placeholder.svg" },
+  { name: "Biome", icon: "/icons/placeholder.svg" },
 ] as const;
 
 /**
