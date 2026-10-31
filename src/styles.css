@@ -369,3 +369,25 @@ a {
     color: var(--foreground);
   }
 }
+
+/*
+ * Jellyfish stage. The canvas reads these custom properties, so colours are defined only here.
+ * Light: ink on aged paper, like a plate from Haeckel's "Kunstformen der Natur".
+ * Dark: faintly glowing lines in the deep sea.
+ */
+.jellyfish-stage {
+  --jelly-water: #efe8d8;
+  --jelly-ink: #24324a;
+  --jelly-accent: #b5523b;
+  --jelly-glow: 0;
+  background-color: var(--jelly-water);
+}
+
+@media (prefers-color-scheme: dark) {
+  .jellyfish-stage {
+    --jelly-water: #06121c;
+    --jelly-ink: #8fe3d6;
+    --jelly-accent: #ab9dff;
+    --jelly-glow: 1;
+  }
+}
