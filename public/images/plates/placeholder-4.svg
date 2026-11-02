@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <!-- Placeholder: a map app sketch. Replace with a real screenshot of the work. -->
+  <rect width="1200" height="800" fill="#f4f3ef"/>
+  <rect x="0" y="0" width="1200" height="800" fill="#e6e5df"/>
+  <path d="M0 520 C200 480 300 600 520 560 S860 420 1200 470" fill="none" stroke="#9aa0a6" stroke-width="40"/>
+  <path d="M380 0 C420 200 340 380 460 560 S600 760 640 800" fill="none" stroke="#c9cdd2" stroke-width="26"/>
+  <path d="M0 220 L1200 160" stroke="#c9cdd2" stroke-width="18"/>
+  <path d="M760 0 L900 800" stroke="#c9cdd2" stroke-width="18"/>
+  <path d="M120 0 L240 800" stroke="#dcdcd6" stroke-width="12"/>
+  <path d="M0 360 L1200 330" stroke="#dcdcd6" stroke-width="12"/>
+  <path d="M460 560 L640 380 L840 330" fill="none" stroke="#1f2328" stroke-width="12" stroke-dasharray="26 16"/>
+  <circle cx="460" cy="560" r="22" fill="#1f2328"/>
+  <path d="M840 300 C840 260 880 250 880 300 C880 330 840 360 840 360 C840 360 800 330 800 300 C800 250 840 260 840 300 Z" fill="#1f2328"/>
+  <rect x="40" y="40" width="380" height="220" rx="14" fill="#f4f3ef"/>
+  <rect x="68" y="72" width="220" height="24" rx="5" fill="#1f2328"/>
+  <rect x="68" y="116" width="300" height="14" rx="4" fill="#9aa0a6"/>
+  <rect x="68" y="142" width="260" height="14" rx="4" fill="#9aa0a6"/>
+  <rect x="68" y="190" width="150" height="44" rx="22" fill="#1f2328"/>
+  <rect x="1100" y="40" width="60" height="120" rx="10" fill="#f4f3ef"/>
+  <rect x="1120" y="70" width="20" height="4" fill="#1f2328"/>
+  <rect x="1120" y="122" width="20" height="4" fill="#1f2328"/>
+  <rect x="1128" y="62" width="4" height="20" fill="#1f2328"/>
+</svg>

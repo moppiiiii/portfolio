@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <!-- Placeholder: a landing page sketch. Replace with a real screenshot of the work. -->
+  <rect width="1200" height="800" fill="#f4f3ef"/>
+  <rect x="0" y="0" width="1200" height="72" fill="#1f2328"/>
+  <rect x="48" y="26" width="140" height="20" rx="4" fill="#f4f3ef"/>
+  <rect x="860" y="28" width="70" height="16" rx="3" fill="#9aa0a6"/>
+  <rect x="950" y="28" width="70" height="16" rx="3" fill="#9aa0a6"/>
+  <rect x="1040" y="22" width="112" height="28" rx="14" fill="#f4f3ef"/>
+  <rect x="48" y="132" width="520" height="44" rx="6" fill="#1f2328"/>
+  <rect x="48" y="192" width="420" height="44" rx="6" fill="#1f2328"/>
+  <rect x="48" y="268" width="460" height="14" rx="4" fill="#9aa0a6"/>
+  <rect x="48" y="294" width="400" height="14" rx="4" fill="#9aa0a6"/>
+  <rect x="48" y="344" width="180" height="48" rx="24" fill="#1f2328"/>
+  <rect x="640" y="120" width="512" height="300" rx="12" fill="#6b7178"/>
+  <circle cx="780" cy="230" r="54" fill="#c9cdd2"/>
+  <path d="M640 420 L820 300 L940 380 L1040 290 L1152 380 L1152 420 Z" fill="#3a3f45"/>
+  <rect x="48" y="472" width="344" height="280" rx="12" fill="#dcdcd6"/>
+  <rect x="428" y="472" width="344" height="280" rx="12" fill="#dcdcd6"/>
+  <rect x="808" y="472" width="344" height="280" rx="12" fill="#dcdcd6"/>
+  <rect x="76" y="500" width="120" height="90" rx="8" fill="#6b7178"/>
+  <rect x="456" y="500" width="120" height="90" rx="8" fill="#6b7178"/>
+  <rect x="836" y="500" width="120" height="90" rx="8" fill="#6b7178"/>
+  <rect x="76" y="620" width="260" height="16" rx="4" fill="#1f2328"/>
+  <rect x="456" y="620" width="260" height="16" rx="4" fill="#1f2328"/>
+  <rect x="836" y="620" width="260" height="16" rx="4" fill="#1f2328"/>
+  <rect x="76" y="652" width="220" height="12" rx="4" fill="#9aa0a6"/>
+  <rect x="456" y="652" width="220" height="12" rx="4" fill="#9aa0a6"/>
+  <rect x="836" y="652" width="220" height="12" rx="4" fill="#9aa0a6"/>
+</svg>

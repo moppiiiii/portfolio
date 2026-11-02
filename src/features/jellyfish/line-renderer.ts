@@ -1,8 +1,16 @@
 import type { Jellyfish, OralArm, Tentacle } from './jellyfish'
 import { RIM_TILT, TAU, bellSurfacePoint, domeOutlinePoint } from './jellyfish'
 import type { Palette } from './palette'
-import type { JellyfishRenderer } from './renderer'
-import { depthFade } from './renderer'
+import type {
+  JellyfishRenderer,
+  PictureDraw,
+  Rays,
+  Rect,
+  School,
+  SideTanks,
+  View,
+} from './renderer'
+import { creatureFade, jellyfishFade } from './renderer'
 import type { Ripple } from './ripple'
 import { forEachRing, ringBend, ringPatch } from './ripple'
 import type { Force, Strand } from './strand'
@@ -15,6 +23,12 @@ const SCALLOP_COUNT = 16
 const SCALLOP_DEPTH = 0.035
 /** Pieces each ripple ring is drawn in, so its strength can vary around the circle. */
 const RIPPLE_SEGMENTS = 48
+
+/** Opacity of the water colour laid over the drawing under page text. */
+const UNDER_TEXT_VEIL = 0.8
+/** Margin (px) the veil reaches past the text, and how far (px) its edge blurs out. */
+const VEIL_MARGIN = 4
+const VEIL_BLUR = 16
 
 // Line opacity for the parts of the bell facing the viewer and facing away.
 const FRONT_ALPHA = 0.55
@@ -43,10 +57,19 @@ export class LineRenderer implements JellyfishRenderer {
     this.palette = palette
   }
 
+  /** Line drawings show pictures as they are, only faded and in grey. */
+  preparePicture(image: HTMLImageElement): CanvasImageSource {
+    return image
+  }
+
   render(
     ctx: CanvasRenderingContext2D,
     group: readonly Jellyfish[],
     ripples: readonly Ripple[],
+    view: View,
+    pictures: readonly PictureDraw[],
+    textRects: readonly Rect[],
+    sides?: SideTanks,
   ): void {
     const { palette } = this
     if (!palette) return
@@ -54,6 +77,7 @@ export class LineRenderer implements JellyfishRenderer {
     ctx.shadowBlur = 0
     ctx.fillStyle = palette.water
     ctx.fillRect(0, 0, this.width, this.height)
+    for (const picture of pictures) this.drawPicture(ctx, picture)
 
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
@@ -61,17 +85,143 @@ export class LineRenderer implements JellyfishRenderer {
       ctx.shadowColor = palette.ink
       ctx.shadowBlur = 6
     }
+    ctx.save()
+    if (view.clip) {
+      ctx.beginPath()
+      ctx.rect(view.clip.x, view.clip.y, view.clip.width, view.clip.height)
+      ctx.clip()
+    }
+    ctx.transform(view.zoom, 0, 0, view.zoom, view.offsetX, view.offsetY)
+    const body = view.bodyScale ?? 1
     for (const jellyfish of group) {
-      this.fade = depthFade(jellyfish.depth)
+      this.fade = jellyfishFade(jellyfish, view)
       const color = jellyfish.tint === 1 ? palette.accent : palette.ink
       ctx.strokeStyle = color
       ctx.fillStyle = color
       if (palette.glow) ctx.shadowColor = color
+      // The body scaled about its own place, so only its size changes, not where it swims.
+      ctx.save()
+      ctx.translate(jellyfish.x * (1 - body), jellyfish.y * (1 - body))
+      ctx.scale(body, body)
       this.drawJellyfish(ctx, jellyfish, palette)
+      ctx.restore()
+    }
+    ctx.restore()
+    if (sides?.school) this.drawSchool(ctx, sides.school, palette)
+    if (sides?.rays) this.drawRays(ctx, sides.rays, palette)
+    if (sides?.ocean) {
+      const { ocean } = sides
+      this.drawRays(ctx, { rays: ocean.rays, view: ocean.view }, palette)
     }
     this.drawRipples(ctx, ripples, palette)
+    this.veilText(ctx, textRects, palette)
     ctx.globalAlpha = 1
     ctx.shadowBlur = 0
+  }
+
+  /** Rays in their own tank, each as a faint filled outline. */
+  private drawRays(
+    ctx: CanvasRenderingContext2D,
+    { rays, view }: Rays,
+    palette: Palette,
+  ) {
+    ctx.save()
+    if (view.clip) {
+      ctx.beginPath()
+      ctx.rect(view.clip.x, view.clip.y, view.clip.width, view.clip.height)
+      ctx.clip()
+    }
+    ctx.transform(view.zoom, 0, 0, view.zoom, view.offsetX, view.offsetY)
+    const body = view.bodyScale ?? 1
+    ctx.fillStyle = palette.ink
+    for (const ray of rays) {
+      ctx.save()
+      ctx.translate(ray.x * (1 - body), ray.y * (1 - body))
+      ctx.scale(body, body)
+      ctx.globalAlpha = 0.4 * creatureFade(ray, view)
+      ctx.beginPath()
+      for (const point of ray.outline()) ctx.lineTo(point.x, point.y)
+      ctx.fill()
+      ctx.restore()
+    }
+    ctx.restore()
+  }
+
+  /** Goldfish in their own tank, each as one thick orange stroke along its spine. */
+  private drawSchool(
+    ctx: CanvasRenderingContext2D,
+    { fish: school, view }: School,
+    palette: Palette,
+  ) {
+    ctx.save()
+    if (view.clip) {
+      ctx.beginPath()
+      ctx.rect(view.clip.x, view.clip.y, view.clip.width, view.clip.height)
+      ctx.clip()
+    }
+    ctx.transform(view.zoom, 0, 0, view.zoom, view.offsetX, view.offsetY)
+    const body = view.bodyScale ?? 1
+    ctx.strokeStyle = palette.gold
+    for (const fish of school) {
+      ctx.save()
+      ctx.translate(fish.x * (1 - body), fish.y * (1 - body))
+      ctx.scale(body, body)
+      ctx.globalAlpha = 0.8 * creatureFade(fish, view)
+      ctx.lineWidth = fish.halfWidth * 1.6
+      ctx.beginPath()
+      for (const point of fish.spine) ctx.lineTo(point.x, point.y)
+      ctx.stroke()
+      ctx.restore()
+    }
+    ctx.restore()
+  }
+
+  /**
+   * Lines cannot be thinned cell by cell the way characters are, so the drawing is covered with a
+   * soft-edged veil of water colour under page text instead.
+   */
+  private veilText(
+    ctx: CanvasRenderingContext2D,
+    rects: readonly Rect[],
+    palette: Palette,
+  ) {
+    if (rects.length === 0) return
+    ctx.save()
+    ctx.globalAlpha = UNDER_TEXT_VEIL
+    ctx.fillStyle = palette.water
+    ctx.shadowColor = palette.water
+    ctx.shadowBlur = VEIL_BLUR
+    for (const rect of rects) {
+      ctx.fillRect(
+        rect.x - VEIL_MARGIN,
+        rect.y - VEIL_MARGIN,
+        rect.width + VEIL_MARGIN * 2,
+        rect.height + VEIL_MARGIN * 2,
+      )
+    }
+    ctx.restore()
+  }
+
+  private drawPicture(ctx: CanvasRenderingContext2D, picture: PictureDraw) {
+    if (picture.alpha <= 0) return
+    ctx.save()
+    ctx.globalAlpha = Math.min(1, picture.alpha) * 0.5
+    ctx.filter = 'grayscale(1)'
+    const { clip } = picture
+    if (clip) {
+      ctx.beginPath()
+      if (!clip.inside) ctx.rect(0, 0, this.width, this.height)
+      ctx.arc(clip.x, clip.y, Math.max(0, clip.radius), 0, TAU)
+      ctx.clip(clip.inside ? 'nonzero' : 'evenodd')
+    }
+    ctx.drawImage(
+      picture.source,
+      picture.x,
+      picture.y,
+      picture.width,
+      picture.height,
+    )
+    ctx.restore()
   }
 
   /**

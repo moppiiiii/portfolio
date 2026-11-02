@@ -9,60 +9,202 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AtlasRouteImport } from './routes/_atlas'
+import { Route as AtlasIndexRouteImport } from './routes/_atlas/index'
+import { Route as AtlasSplatRouteImport } from './routes/_atlas/$'
+import { Route as AtlasAboutRouteImport } from './routes/_atlas/about'
+import { Route as AtlasCareerRouteImport } from './routes/_atlas/career'
+import { Route as AtlasOceanRouteImport } from './routes/_atlas/ocean'
+import { Route as AtlasPlatesIndexRouteImport } from './routes/_atlas/plates/index'
+import { Route as AtlasPlatesSlugRouteImport } from './routes/_atlas/plates/$slug'
 
-const IndexRoute = IndexRouteImport.update({
+const AtlasRoute = AtlasRouteImport.update({
+  id: '/_atlas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AtlasIndexRoute = AtlasIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AtlasRoute,
+} as any)
+const AtlasSplatRoute = AtlasSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => AtlasRoute,
+} as any)
+const AtlasAboutRoute = AtlasAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AtlasRoute,
+} as any)
+const AtlasCareerRoute = AtlasCareerRouteImport.update({
+  id: '/career',
+  path: '/career',
+  getParentRoute: () => AtlasRoute,
+} as any)
+const AtlasOceanRoute = AtlasOceanRouteImport.update({
+  id: '/ocean',
+  path: '/ocean',
+  getParentRoute: () => AtlasRoute,
+} as any)
+const AtlasPlatesIndexRoute = AtlasPlatesIndexRouteImport.update({
+  id: '/plates/',
+  path: '/plates/',
+  getParentRoute: () => AtlasRoute,
+} as any)
+const AtlasPlatesSlugRoute = AtlasPlatesSlugRouteImport.update({
+  id: '/plates/$slug',
+  path: '/plates/$slug',
+  getParentRoute: () => AtlasRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AtlasIndexRoute
+  '/$': typeof AtlasSplatRoute
+  '/about': typeof AtlasAboutRoute
+  '/career': typeof AtlasCareerRoute
+  '/ocean': typeof AtlasOceanRoute
+  '/plates/$slug': typeof AtlasPlatesSlugRoute
+  '/plates/': typeof AtlasPlatesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/$': typeof AtlasSplatRoute
+  '/about': typeof AtlasAboutRoute
+  '/career': typeof AtlasCareerRoute
+  '/ocean': typeof AtlasOceanRoute
+  '/': typeof AtlasIndexRoute
+  '/plates/$slug': typeof AtlasPlatesSlugRoute
+  '/plates': typeof AtlasPlatesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_atlas': typeof AtlasRouteWithChildren
+  '/_atlas/$': typeof AtlasSplatRoute
+  '/_atlas/about': typeof AtlasAboutRoute
+  '/_atlas/career': typeof AtlasCareerRoute
+  '/_atlas/ocean': typeof AtlasOceanRoute
+  '/_atlas/': typeof AtlasIndexRoute
+  '/_atlas/plates/$slug': typeof AtlasPlatesSlugRoute
+  '/_atlas/plates/': typeof AtlasPlatesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/$' | '/about' | '/career' | '/ocean' | '/plates/$slug' | '/plates/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/$' | '/about' | '/career' | '/ocean' | '/' | '/plates/$slug' | '/plates'
+  id:
+    | '__root__'
+    | '/_atlas'
+    | '/_atlas/$'
+    | '/_atlas/about'
+    | '/_atlas/career'
+    | '/_atlas/ocean'
+    | '/_atlas/'
+    | '/_atlas/plates/$slug'
+    | '/_atlas/plates/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AtlasRoute: typeof AtlasRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_atlas': {
+      id: '/_atlas'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AtlasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_atlas/': {
+      id: '/_atlas/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AtlasIndexRouteImport
+      parentRoute: typeof AtlasRoute
+    }
+    '/_atlas/$': {
+      id: '/_atlas/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof AtlasSplatRouteImport
+      parentRoute: typeof AtlasRoute
+    }
+    '/_atlas/about': {
+      id: '/_atlas/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AtlasAboutRouteImport
+      parentRoute: typeof AtlasRoute
+    }
+    '/_atlas/career': {
+      id: '/_atlas/career'
+      path: '/career'
+      fullPath: '/career'
+      preLoaderRoute: typeof AtlasCareerRouteImport
+      parentRoute: typeof AtlasRoute
+    }
+    '/_atlas/ocean': {
+      id: '/_atlas/ocean'
+      path: '/ocean'
+      fullPath: '/ocean'
+      preLoaderRoute: typeof AtlasOceanRouteImport
+      parentRoute: typeof AtlasRoute
+    }
+    '/_atlas/plates/': {
+      id: '/_atlas/plates/'
+      path: '/plates'
+      fullPath: '/plates/'
+      preLoaderRoute: typeof AtlasPlatesIndexRouteImport
+      parentRoute: typeof AtlasRoute
+    }
+    '/_atlas/plates/$slug': {
+      id: '/_atlas/plates/$slug'
+      path: '/plates/$slug'
+      fullPath: '/plates/$slug'
+      preLoaderRoute: typeof AtlasPlatesSlugRouteImport
+      parentRoute: typeof AtlasRoute
     }
   }
 }
 
+interface AtlasRouteChildren {
+  AtlasSplatRoute: typeof AtlasSplatRoute
+  AtlasAboutRoute: typeof AtlasAboutRoute
+  AtlasCareerRoute: typeof AtlasCareerRoute
+  AtlasOceanRoute: typeof AtlasOceanRoute
+  AtlasIndexRoute: typeof AtlasIndexRoute
+  AtlasPlatesSlugRoute: typeof AtlasPlatesSlugRoute
+  AtlasPlatesIndexRoute: typeof AtlasPlatesIndexRoute
+}
+
+const AtlasRouteChildren: AtlasRouteChildren = {
+  AtlasSplatRoute: AtlasSplatRoute,
+  AtlasAboutRoute: AtlasAboutRoute,
+  AtlasCareerRoute: AtlasCareerRoute,
+  AtlasOceanRoute: AtlasOceanRoute,
+  AtlasIndexRoute: AtlasIndexRoute,
+  AtlasPlatesSlugRoute: AtlasPlatesSlugRoute,
+  AtlasPlatesIndexRoute: AtlasPlatesIndexRoute,
+}
+
+const AtlasRouteWithChildren = AtlasRoute._addFileChildren(AtlasRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AtlasRoute: AtlasRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

@@ -1,7 +1,39 @@
 import type { Force } from './strand'
 import { Strand } from './strand'
 
-export type Bounds = { width: number; height: number }
+/**
+ * The area the jellyfish live in, in px. `top` and `bottom` are bands at the top and bottom
+ * edge (such as text) that the jellyfish keep out of.
+ */
+export type Bounds = {
+  width: number
+  height: number
+  top?: number
+  bottom?: number
+}
+
+/** Height of the open water between the bands. */
+function waterHeight(bounds: Bounds): number {
+  return Math.max(1, bounds.height - (bounds.top ?? 0) - (bounds.bottom ?? 0))
+}
+
+/** One of several equal parts of the water, which a jellyfish keeps to. */
+export type Lane = { index: number; count: number }
+
+/**
+ * The part of the water `lane` covers, as shares (0 to 1) of the water's width and height: a
+ * column on a landscape screen and a row on a portrait one, so lanes run along the longer side.
+ * The whole water without a lane.
+ */
+export function laneArea(bounds: Bounds, lane: Lane | undefined) {
+  const whole = { left: 0, right: 1, top: 0, bottom: 1 }
+  if (!lane) return whole
+  const from = lane.index / lane.count
+  const to = (lane.index + 1) / lane.count
+  return bounds.width >= waterHeight(bounds)
+    ? { ...whole, left: from, right: to }
+    : { ...whole, top: from, bottom: to }
+}
 
 export type JellyfishOptions = {
   /** Starting position. Defaults to the lower middle of the screen. */
@@ -15,6 +47,16 @@ export type JellyfishOptions = {
   depth?: number
   /** Palette colour the jellyfish is drawn in: 0 is the ink colour, 1 the accent colour. */
   tint?: 0 | 1
+  /**
+   * Whether it shows when its water is seen from afar, as a small tank on the map. The others
+   * appear only as the camera comes close. Defaults to true.
+   */
+  shownAfar?: boolean
+  /**
+   * The part of the water it keeps to when choosing where to swim, so the jellyfish shown on the
+   * map do not run together there. Anywhere when absent.
+   */
+  lane?: Lane
   random?: () => number
 }
 
@@ -79,6 +121,20 @@ const FRIGHT_DECAY = 1.6
 /** Seconds a fleeing jellyfish keeps heading away before wandering again. */
 const FLEE_TIME = 5
 
+// Reaction to the pointer passing nearby: unhurried, unlike a click.
+/** Distance from the rim centre within which a jellyfish notices the pointer, in bell radii. */
+const AVOID_REACH = 2.6
+/** Speed the pointer's wake gives a jellyfish right at the pointer, in radii per second. */
+const AVOID_PUSH = 0.35
+/** Fright at the pointer: pulses quicken a little, but the jellyfish does not bolt. */
+const AVOID_FRIGHT = 0.4
+/** How far it heads away, in bell radii, and the least time (s) it keeps heading there. */
+const AVOID_DISTANCE = 5
+const AVOID_TIME = 3
+
+/** Seconds for fading out of or back into view to mostly settle. */
+const PRESENCE_EASE = 0.35
+
 // Staying on screen.
 /**
  * Margins between the rim centre and the screen edges, in bell radii. Inside them the whole bell
@@ -97,6 +153,11 @@ const EDGE_DRAG = 8
 const SEPARATION_DEPTH = 0.3
 /** Distance, in summed radii, below which two jellyfish push apart. */
 const SEPARATION_RANGE = 1.6
+/**
+ * The same for two jellyfish that both show on the map, at any depth: wide enough to keep them
+ * apart there, where their bodies are drawn about twice the size of their place.
+ */
+const SEPARATION_RANGE_AFAR = 2.2
 /** Push strength at zero distance, in radii per second squared. */
 const SEPARATION_PUSH = 1.2
 
@@ -157,7 +218,7 @@ export function domeOutlinePoint(
 export function bellRadius(bounds: Bounds, scale = 1): number {
   return (
     clamp(
-      Math.min(bounds.width, bounds.height) * RADIUS_SHARE,
+      Math.min(bounds.width, waterHeight(bounds)) * RADIUS_SHARE,
       MIN_RADIUS,
       MAX_RADIUS,
     ) * scale
@@ -196,6 +257,11 @@ export class Jellyfish {
   readonly radius: number
   readonly depth: number
   readonly tint: 0 | 1
+  readonly shownAfar: boolean
+  readonly lane: Lane | undefined
+  /** 1 fully in view, 0 faded out. Eases towards `visibility`. */
+  presence = 1
+  private visibility = 1
   readonly tentacles: Tentacle[] = []
   readonly oralArms: OralArm[] = []
 
@@ -217,6 +283,8 @@ export class Jellyfish {
     this.random = random
     this.depth = options.depth ?? 1
     this.tint = options.tint ?? 0
+    this.shownAfar = options.shownAfar ?? true
+    this.lane = options.lane
     this.radius = bellRadius(bounds, options.scale)
     this.x = options.x ?? bounds.width * 0.5
     this.y = options.y ?? bounds.height * 0.62
@@ -299,8 +367,19 @@ export class Jellyfish {
     )
   }
 
+  /**
+   * Sets how visible the jellyfish should be, from 0 (gone) to 1 (fully visible). It fades there
+   * gradually, or at once with `immediately`.
+   */
+  setVisibility(visibility: number, immediately = false): void {
+    this.visibility = visibility
+    if (immediately) this.presence = visibility
+  }
+
   step(dt: number, neighbours: readonly Jellyfish[] = []): void {
     this.time += dt
+    this.presence +=
+      (this.visibility - this.presence) * (1 - Math.exp(-dt / PRESENCE_EASE))
     this.steer(dt)
     this.keepApart(dt, neighbours)
     this.keepOnScreen(dt)
@@ -314,14 +393,16 @@ export class Jellyfish {
    */
   private onScreenArea() {
     const { width, height } = this.bounds
+    const waterTop = this.bounds.top ?? 0
+    const waterBottom = height - (this.bounds.bottom ?? 0)
     const r = this.radius
     const left = Math.min(r * EDGE_SIDE, width / 2)
-    const top = Math.min(r * EDGE_TOP, height / 2)
+    const top = Math.min(waterTop + r * EDGE_TOP, (waterTop + waterBottom) / 2)
     return {
       left,
       right: Math.max(left, width - r * EDGE_SIDE),
       top,
-      bottom: Math.max(top, height - r * EDGE_BOTTOM),
+      bottom: Math.max(top, waterBottom - r * EDGE_BOTTOM),
     }
   }
 
@@ -353,11 +434,16 @@ export class Jellyfish {
   private keepApart(dt: number, neighbours: readonly Jellyfish[]): void {
     for (const other of neighbours) {
       if (other === this) continue
-      if (Math.abs(other.depth - this.depth) > SEPARATION_DEPTH) continue
+      const afar = this.shownAfar && other.shownAfar
+      if (!afar && Math.abs(other.depth - this.depth) > SEPARATION_DEPTH) {
+        continue
+      }
       const dx = this.x - other.x
       const dy = this.y - other.y
       const distance = Math.hypot(dx, dy) || 1
-      const range = (this.radius + other.radius) * SEPARATION_RANGE
+      const range =
+        (this.radius + other.radius) *
+        (afar ? SEPARATION_RANGE_AFAR : SEPARATION_RANGE)
       if (distance >= range) continue
       const push = (1 - distance / range) * SEPARATION_PUSH * this.radius * dt
       this.vx += (dx / distance) * push
@@ -470,7 +556,8 @@ export class Jellyfish {
     const dy = this.y - y
     const distance = Math.hypot(dx, dy) || 1
     const reach =
-      Math.min(this.bounds.width, this.bounds.height) * DISTURB_REACH_SHARE
+      Math.min(this.bounds.width, waterHeight(this.bounds)) *
+      DISTURB_REACH_SHARE
     if (distance > reach) return
 
     const closeness = 1 - distance / reach
@@ -487,10 +574,41 @@ export class Jellyfish {
     this.retargetAt = this.time + FLEE_TIME
   }
 
+  /**
+   * Reacts to the pointer passing at (x, y): the jellyfish is nudged by the pointer's wake and
+   * turns to swim away at an unhurried pace. Jellyfish further than the reach ignore it.
+   */
+  avoid(x: number, y: number): void {
+    const dx = this.x - x
+    const dy = this.y - y
+    const distance = Math.hypot(dx, dy) || 1
+    const reach = this.radius * AVOID_REACH
+    if (distance > reach) return
+
+    const closeness = 1 - distance / reach
+    const push = AVOID_PUSH * this.radius * closeness
+    this.vx += (dx / distance) * push
+    this.vy += (dy / distance) * push
+    this.fright = Math.max(this.fright, closeness * AVOID_FRIGHT)
+
+    const away = this.radius * AVOID_DISTANCE
+    const area = this.onScreenArea()
+    this.targetX = clamp(this.x + (dx / distance) * away, area.left, area.right)
+    this.targetY = clamp(this.y + (dy / distance) * away, area.top, area.bottom)
+    this.retargetAt = Math.max(this.retargetAt, this.time + AVOID_TIME)
+  }
+
   private pickTarget(): void {
-    const { width, height } = this.bounds
-    this.targetX = width * (0.12 + this.random() * 0.76)
-    this.targetY = height * (0.25 + this.random() * 0.5)
+    const { width } = this.bounds
+    const waterTop = this.bounds.top ?? 0
+    const area = laneArea(this.bounds, this.lane)
+    this.targetX =
+      width *
+      (area.left + (area.right - area.left) * (0.12 + this.random() * 0.76))
+    this.targetY =
+      waterTop +
+      waterHeight(this.bounds) *
+        (area.top + (area.bottom - area.top) * (0.25 + this.random() * 0.5))
     this.retargetAt = this.time + 10 + this.random() * 6
   }
 

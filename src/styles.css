@@ -374,20 +374,111 @@ a {
  * Jellyfish stage. The canvas reads these custom properties, so colours are defined only here.
  * Light: ink on aged paper, like a plate from Haeckel's "Kunstformen der Natur".
  * Dark: faintly glowing lines in the deep sea.
+ * The theme is the `dark` class on <html>, set before the first paint from the visitor's choice
+ * or, until they choose, the OS setting (see src/features/theme/theme.ts).
  */
 .jellyfish-stage {
   --jelly-water: #efe8d8;
   --jelly-ink: #24324a;
   --jelly-accent: #b5523b;
+  /* The goldfish's orange. */
+  --jelly-gold: #d27a1e;
+  /*
+   * The aquarium map's floor, laid over the water everywhere but in the tanks: older, darker
+   * paper than the water, so the tanks read as lit windows in a dim hall.
+   */
+  --jelly-floor: #e7ddc7;
   --jelly-glow: 0;
+  /*
+   * Squares behind lit characters: their opacity, and the gap around each. On paper they join
+   * into a soft wash, like colour laid under an ink print; separate squares read as smudges.
+   */
+  --jelly-tile: 0.2;
+  --jelly-tile-gap: 0;
+  /* Weight of the characters in the water. */
+  --jelly-weight: 700;
+  /* Below 1 inks faint characters (tentacles) more strongly, so they hold up on paper. */
+  --jelly-lift: 0.55;
+  /* Opacity of secondary text (labels, links at rest) and of supporting lines (summaries). */
+  --jelly-faint: 0.8;
+  --jelly-soft: 0.88;
   background-color: var(--jelly-water);
 }
 
-@media (prefers-color-scheme: dark) {
-  .jellyfish-stage {
-    --jelly-water: #06121c;
-    --jelly-ink: #8fe3d6;
-    --jelly-accent: #ab9dff;
-    --jelly-glow: 1;
+.dark .jellyfish-stage {
+  --jelly-water: #06121c;
+  --jelly-ink: #8fe3d6;
+  --jelly-accent: #ab9dff;
+  --jelly-gold: #f5a45a;
+  --jelly-floor: #0c1a23;
+  --jelly-glow: 1;
+  --jelly-tile: 0.28;
+  --jelly-tile-gap: 1;
+  --jelly-weight: 600;
+  --jelly-lift: 1;
+  --jelly-faint: 0.6;
+  --jelly-soft: 0.7;
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+/*
+ * Switching theme: the new one spreads over the old from the switch (the outline is animated
+ * from script), instead of the default cross-fade.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Text on the water is all one ink, links included; they differ only by opacity. */
+.jellyfish-stage a,
+.jellyfish-stage a:hover {
+  color: inherit;
+}
+
+/*
+ * Plate text motion. A new page's bottom band drifts up into place, and the notes on an
+ * enlarged figure appear once the camera has nearly reached it.
+ */
+@keyframes plate-drift-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes plate-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.plate-band {
+  animation: plate-drift-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.plate-note {
+  animation: plate-fade-in 600ms ease-out 900ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plate-band,
+  .plate-note {
+    animation: none;
   }
 }

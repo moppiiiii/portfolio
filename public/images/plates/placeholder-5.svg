@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <!-- Placeholder: an article page sketch. Replace with a real screenshot of the work. -->
+  <rect width="1200" height="800" fill="#f4f3ef"/>
+  <rect x="300" y="50" width="600" height="14" rx="4" fill="#9aa0a6"/>
+  <rect x="300" y="100" width="560" height="40" rx="6" fill="#1f2328"/>
+  <rect x="300" y="150" width="440" height="40" rx="6" fill="#1f2328"/>
+  <circle cx="320" cy="232" r="20" fill="#6b7178"/>
+  <rect x="352" y="224" width="160" height="14" rx="4" fill="#9aa0a6"/>
+  <rect x="300" y="280" width="600" height="250" rx="10" fill="#6b7178"/>
+  <path d="M300 530 L460 400 L560 470 L700 360 L900 500 L900 530 Z" fill="#3a3f45"/>
+  <rect x="300" y="562" width="600" height="13" rx="4" fill="#3a3f45"/>
+  <rect x="300" y="588" width="580" height="13" rx="4" fill="#3a3f45"/>
+  <rect x="300" y="614" width="600" height="13" rx="4" fill="#3a3f45"/>
+  <rect x="300" y="640" width="420" height="13" rx="4" fill="#3a3f45"/>
+  <rect x="300" y="684" width="600" height="13" rx="4" fill="#3a3f45"/>
+  <rect x="300" y="710" width="560" height="13" rx="4" fill="#3a3f45"/>
+  <rect x="300" y="736" width="590" height="13" rx="4" fill="#3a3f45"/>
+  <rect x="80" y="280" width="160" height="12" rx="4" fill="#9aa0a6"/>
+  <rect x="80" y="304" width="120" height="12" rx="4" fill="#9aa0a6"/>
+  <rect x="80" y="328" width="140" height="12" rx="4" fill="#9aa0a6"/>
+</svg>

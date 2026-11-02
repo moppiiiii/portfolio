@@ -1,10 +1,15 @@
-/** A ripple spreading from a click or tap. Each one gets its own random shape. */
+/**
+ * A ripple spreading from a click or tap, or left behind by the pointer moving over the water.
+ * Each one gets its own random shape.
+ */
 export type Ripple = {
   x: number
   y: number
   age: number
   /** Multiplier on the spreading speed, so no two ripples move alike. */
   speed: number
+  /** Multiplier on how strongly the rings bend and light the water: 1 for a click. */
+  strength: number
   /** Random phases that bend the rings and vary their strength around the circle. */
   phases: readonly [number, number, number, number]
 }
@@ -43,12 +48,23 @@ function randomPhase(): number {
   return Math.random() * Math.PI * 2
 }
 
-export function createRipple(x: number, y: number): Ripple {
+/**
+ * A new ripple at (x, y). `pace` multiplies how fast it spreads: 1 for a touch on the water,
+ * higher for the ripple that carries a page transition across the screen, lower for the small
+ * ones the pointer leaves behind. `strength` multiplies how strongly it shows.
+ */
+export function createRipple(
+  x: number,
+  y: number,
+  pace = 1,
+  strength = 1,
+): Ripple {
   return {
     x,
     y,
     age: 0,
-    speed: 0.85 + Math.random() * 0.3,
+    speed: (0.85 + Math.random() * 0.3) * pace,
+    strength,
     phases: [randomPhase(), randomPhase(), randomPhase(), randomPhase()],
   }
 }
@@ -66,7 +82,21 @@ function ringState(
   // Rings slow down slightly as they spread, and fade out towards the end.
   const radius =
     shortSide * RING_SPEED_SHARE * ripple.speed * age * (1 - 0.25 * life)
-  return { radius, strength: RING_STRENGTHS[ring] * (1 - life) ** 1.5 }
+  return {
+    radius,
+    strength: ripple.strength * RING_STRENGTHS[ring] * (1 - life) ** 1.5,
+  }
+}
+
+/**
+ * Radius of the first ring's crest before bending. Unlike the ring itself, it keeps growing after
+ * the ring has faded, so a reveal that follows it always reaches the edges of the screen.
+ */
+export function crestRadius(ripple: Ripple, shortSide: number): number {
+  const life = Math.min(1, ripple.age / RIPPLE_LIFETIME)
+  return (
+    shortSide * RING_SPEED_SHARE * ripple.speed * ripple.age * (1 - 0.25 * life)
+  )
 }
 
 /** How much the rings of `ripple` bulge out (above 1) or dip in (below 1) at `angle`. */

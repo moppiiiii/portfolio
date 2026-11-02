@@ -2,6 +2,8 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 
+import { THEME_SCRIPT } from '#/features/theme/theme'
+
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -14,8 +16,9 @@ export const Route = createRootRoute({
         name: 'viewport',
         content: 'width=device-width, initial-scale=1',
       },
+      // Only for pages outside the atlas, such as a crash; every atlas page sets its own title.
       {
-        title: 'TanStack Start Starter',
+        title: 'Tomohisa Tanaka',
       },
     ],
     links: [
@@ -30,8 +33,11 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // The theme script below sets a class on <html> before React hydrates it.
+    <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Sets the theme before the first paint, so the other theme never flashes. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <HeadContent />
       </head>
       <body>
