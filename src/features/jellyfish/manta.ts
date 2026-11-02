@@ -3,8 +3,9 @@ import { Glider } from './glider'
 import type { Bounds } from './jellyfish'
 
 /**
- * A manta ray seen from above. It glides in wide curves, beating its wings slowly: each beat runs
- * as a wave from the body out to the wing tips, and a raised wing looks narrower from above.
+ * A manta ray seen from above. It sweeps round in wide curves, beating its wings slowly a few
+ * times and then gliding on them spread: each beat runs as a wave from the body out to the wing
+ * tips, and a raised wing looks narrower from above.
  * The shape is drawn in the ray's own frame, `forward` along its heading and `across` to its
  * right, in shares of its wingspan (its size).
  */
@@ -17,13 +18,23 @@ export const MANTA: GliderSettings = {
   turnRate: 0.55,
   edgeMargin: 0.28,
   // Wide, as their long tails and broad wings reach well past their middles.
-  separation: 1.6,
+  separation: 1.8,
   notice: 0.7,
   frightDecay: 1.4,
+  sweep: { radius: 0.55, lead: 2.2, ease: 1.1, wander: 0.35 },
 }
 /** Seconds per wing beat at rest, and how much faster a fright makes them. */
 const BEAT_TIME = 3.2
 const FRIGHT_BEAT = 1.6
+/** How many beats it gives in a row, and for how many seconds it then glides. */
+const BEATS = { least: 2, most: 4 }
+const GLIDE_TIME = { least: 2.5, most: 6 }
+/** Seconds for its beating to die away into a glide, or to start up again. */
+const SETTLE_TIME = 0.9
+/** How much one beat's length can differ from the usual, either way. */
+const BEAT_SPREAD = 0.12
+/** How far the tail bends to follow it round a turn, in wingspans. */
+const TAIL_BEND = 0.12
 
 /**
  * Right half of the body's outline, from the head round the wing tip to the root of the tail:
@@ -57,10 +68,18 @@ type Point = { x: number; y: number }
 export class Manta extends Glider {
   /** Wing beat, in radians. */
   beat: number
+  /** How hard it beats its wings right now: 1 beating, 0 gliding on them spread. */
+  private flapping = 1
+  /** Whether it means to beat or to glide, and for how many more seconds. */
+  private beating = true
+  private boutLeft: number
+  /** This beat's length, as a share of the usual. */
+  private beatLength = 1
 
   constructor(bounds: Bounds, options: GliderOptions) {
     super(bounds, options, MANTA)
     this.beat = this.random() * Math.PI * 2
+    this.boutLeft = this.beatBout() * this.random()
   }
 
   /** Its wingspan (px). */
@@ -68,23 +87,52 @@ export class Manta extends Glider {
     return this.size
   }
 
-  /** Each downstroke pushes it on; between strokes it glides. */
+  /**
+   * Each downstroke pushes it on. After a few beats it holds its wings spread and glides,
+   * slowing a little, until it beats again; a fright keeps it beating.
+   */
   protected stroke(dt: number, fright: number): number {
-    const beatTime = BEAT_TIME / (1 + FRIGHT_BEAT * fright)
-    this.beat += (dt / beatTime) * Math.PI * 2
-    return 0.8 + 0.4 * Math.max(0, Math.sin(this.beat))
+    this.boutLeft -= dt
+    if (this.boutLeft <= 0) {
+      this.beating = !this.beating
+      this.boutLeft = this.beating
+        ? this.beatBout()
+        : GLIDE_TIME.least +
+          (GLIDE_TIME.most - GLIDE_TIME.least) * this.random()
+    }
+    const wanted = this.beating || fright > 0.15 ? 1 : 0
+    this.flapping +=
+      (wanted - this.flapping) * (1 - Math.exp(-dt / SETTLE_TIME))
+
+    const beatTime = (BEAT_TIME * this.beatLength) / (1 + FRIGHT_BEAT * fright)
+    const before = Math.floor(this.beat / (Math.PI * 2))
+    // Gliding, the wave runs on slowly as the wings settle.
+    this.beat += (dt / beatTime) * Math.PI * 2 * (0.35 + 0.65 * this.flapping)
+    if (Math.floor(this.beat / (Math.PI * 2)) !== before) {
+      this.beatLength = 1 + BEAT_SPREAD * (this.random() * 2 - 1)
+    }
+    return 0.8 + this.flapping * (0.1 + 0.4 * Math.max(0, Math.sin(this.beat)))
+  }
+
+  /** Seconds for a run of a few beats. */
+  private beatBout(): number {
+    const beats = BEATS.least + (BEATS.most - BEATS.least) * this.random()
+    return beats * BEAT_TIME
   }
 
   /**
    * The body's outline this moment, all the way round, in its water. Each wing is narrowed where
    * the beat has raised it, the wave reaching the tip last, and the inner wing of a turn dips.
+   * Gliding, the wings lie spread.
    */
   outline(): Point[] {
     const wing = (side: 1 | -1) =>
       OUTLINE.map(([forward, across]) => {
         const out = across / 0.5
-        const wave = Math.sin(this.beat - out * 1.6)
-        const raised = (1 + wave) / 2 + this.bank * side * 0.25
+        const wave =
+          Math.sin(this.beat - out * 1.6) * (0.15 + 0.85 * this.flapping)
+        const raised =
+          ((1 + wave) / 2) * this.flapping + this.bank * side * 0.25
         const narrow = 1 - 0.18 * out * out * Math.min(1, Math.max(0, raised))
         return this.toWorld(
           forward - 0.035 * out * out * wave,
@@ -98,14 +146,14 @@ export class Manta extends Glider {
     return around
   }
 
-  /** The tail, from its root to its tip, swaying slowly. */
+  /** The tail, from its root to its tip, swaying slowly and bending to follow it round a turn. */
   tail(): Point[] {
     const points: Point[] = []
     for (let i = 0; i <= 8; i++) {
       const t = i / 8
       const forward = -0.3 + (TAIL_END + 0.3) * t
       const sway = 0.05 * t * t * Math.sin(this.beat * 0.5 + t * 2.5)
-      points.push(this.toWorld(forward, sway))
+      points.push(this.toWorld(forward, sway + TAIL_BEND * this.bank * t * t))
     }
     return points
   }

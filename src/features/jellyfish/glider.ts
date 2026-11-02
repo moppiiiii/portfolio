@@ -20,6 +20,23 @@ export type GliderSettings = {
   notice: number
   /** Seconds for a fright to fade to about a third. */
   frightDecay: number
+  /**
+   * For kinds that sweep round in wide curves (a ray). Without it, it turns as fast as it can
+   * until it faces where it wants to go.
+   */
+  sweep?: Sweep
+}
+
+/** How a kind that sweeps round in wide curves turns. */
+export type Sweep = {
+  /** Its tightest curve at its usual pace, as a radius in sizes. Near an edge it turns harder. */
+  radius: number
+  /** Seconds it spreads a turn over: the turn it wants is what is left of it in this time. */
+  lead: number
+  /** Seconds for a turn to build up or ease off. */
+  ease: number
+  /** How far (radians) its course drifts on its own, slowly, when nothing presses on it. */
+  wander: number
 }
 
 export type GliderOptions = {
@@ -54,6 +71,8 @@ export abstract class Glider {
   readonly shownAfar: boolean
   /** How hard it is turning (-1 to 1), for kinds that lean into turns. */
   protected bank = 0
+  /** How fast it is turning (rad/s), for kinds that sweep round. */
+  protected spin = 0
   protected fright = 0
   protected time = 0
   protected readonly random: () => number
@@ -62,6 +81,8 @@ export abstract class Glider {
   private targetX = 0
   private targetY = 0
   private retargetAt = 0
+  /** Where its slow drift of course starts, so that no two drift alike. */
+  private readonly drift: number
   private bounds: Bounds
   private readonly scale: number
   private readonly settings: GliderSettings
@@ -79,6 +100,7 @@ export abstract class Glider {
     this.scale = options.scale
     this.shownAfar = options.shownAfar
     this.random = options.random ?? Math.random
+    this.drift = this.random() * Math.PI * 2
     this.measure()
     this.speed = settings.cruise * this.size
     this.pickTarget()
@@ -116,7 +138,9 @@ export abstract class Glider {
 
     if (
       this.time >= this.retargetAt ||
-      Math.hypot(this.targetX - this.x, this.targetY - this.y) < this.size * 0.4
+      Math.hypot(this.targetX - this.x, this.targetY - this.y) <
+        this.size * 0.4 ||
+      this.cannotReachTarget()
     ) {
       this.pickTarget()
     }
@@ -129,31 +153,58 @@ export abstract class Glider {
     wantY /= toTarget
     const margin = this.margin()
     const edge = (distance: number) => Math.max(0, 1 - distance / margin) * 3
-    wantX += edge(this.x) - edge(this.bounds.width - this.x)
-    wantY += edge(this.y) - edge(this.bounds.height - this.y)
+    // A kind that sweeps round feels for the edges and the others a little ahead, as its turns
+    // take longer.
+    const ahead = settings.sweep ? this.speed * settings.sweep.lead : 0
+    const feelX = this.x + Math.cos(this.heading) * ahead
+    const feelY = this.y + Math.sin(this.heading) * ahead
+    let pressX = edge(feelX) - edge(this.bounds.width - feelX)
+    let pressY = edge(feelY) - edge(this.bounds.height - feelY)
+    // How much one of the others lies across its way ahead, 0 to 1: such a kind then slows to
+    // let it pass.
+    let blocked = 0
+    // Near an edge, such a kind gives way to the others less, so that they cannot push it out.
+    const giving = settings.sweep
+      ? 1 - 0.7 * Math.min(1, Math.hypot(pressX, pressY) / 3)
+      : 1
     for (const other of others) {
       if (other === this) continue
-      const dx = this.x - other.x
-      const dy = this.y - other.y
+      const dx = feelX - other.x
+      const dy = feelY - other.y
       const distance = Math.hypot(dx, dy) || 1
       const range = (this.size + other.size) * 0.5 * settings.separation
       if (distance >= range) continue
-      const push = (1 - distance / range) * 2
-      wantX += (dx / distance) * push
-      wantY += (dy / distance) * push
+      const push = (1 - distance / range) * 2 * giving
+      pressX += (dx / distance) * push
+      pressY += (dy / distance) * push
+      const facing =
+        (-dx * Math.cos(this.heading) - dy * Math.sin(this.heading)) / distance
+      blocked = Math.max(blocked, (1 - distance / range) * Math.max(0, facing))
     }
-    const turn = wrapAngle(Math.atan2(wantY, wantX) - this.heading)
-    const rate = settings.turnRate * (1 + this.fright) * dt
-    const turned = Math.max(-rate, Math.min(rate, turn))
-    this.heading += turned
-    if (rate > 0) {
-      this.bank += (turned / rate - this.bank) * (1 - Math.exp(-dt / 0.8))
+    wantX += pressX
+    wantY += pressY
+    if (settings.sweep) {
+      // How hard the edges and the others press on it, 0 to 1.
+      const pressed = Math.min(1, Math.hypot(pressX, pressY) / 2)
+      this.sweepRound(dt, Math.atan2(wantY, wantX), pressed, settings.sweep)
+    } else {
+      const turn = wrapAngle(Math.atan2(wantY, wantX) - this.heading)
+      const rate = settings.turnRate * (1 + this.fright) * dt
+      const turned = Math.max(-rate, Math.min(rate, turn))
+      this.heading += turned
+      if (rate > 0) {
+        this.bank += (turned / rate - this.bank) * (1 - Math.exp(-dt / 0.8))
+      }
     }
 
     // Each stroke pushes it on; between strokes it glides and slows a little.
     const push = this.stroke(dt, this.fright)
+    const slowed = settings.sweep ? 1 - 0.7 * blocked : 1
     const wanted =
-      this.size * (settings.cruise + settings.burst * this.fright) * push
+      this.size *
+      (settings.cruise + settings.burst * this.fright) *
+      push *
+      slowed
     this.speed += (wanted - this.speed) * (1 - Math.exp(-dt / 0.6))
     this.x += Math.cos(this.heading) * this.speed * dt
     this.y += Math.sin(this.heading) * this.speed * dt
@@ -176,6 +227,59 @@ export abstract class Glider {
     const f = forward * this.size
     const a = across * this.size
     return { x: this.x + f * cos - a * sin, y: this.y + f * sin + a * cos }
+  }
+
+  /**
+   * Turns toward `aim` the way a ray does: the turn builds up and eases off over a second or so,
+   * keeps to a wide curve unless something presses on it (`pressed`, 0 to 1), and its course
+   * drifts a little on its own while nothing does.
+   */
+  private sweepRound(
+    dt: number,
+    aim: number,
+    pressed: number,
+    sweep: Sweep,
+  ): void {
+    const { settings } = this
+    const drift =
+      0.6 * Math.sin(this.time * 0.21 + this.drift) +
+      0.4 * Math.sin(this.time * 0.083 + this.drift * 2.3)
+    const turn = wrapAngle(
+      aim + sweep.wander * (1 - pressed) * drift - this.heading,
+    )
+    // Slowed down, it turns no wider than at its usual pace.
+    const pace = Math.max(this.speed, settings.cruise * this.size)
+    const widest = pace / (sweep.radius * this.size)
+    const limit = Math.min(
+      settings.turnRate * (1 + this.fright),
+      widest * (1 + 2 * pressed),
+    )
+    // Pressed, it turns sooner and harder.
+    const hurry = 1 - 0.6 * pressed
+    const wanted = Math.max(
+      -limit,
+      Math.min(limit, turn / (sweep.lead * hurry)),
+    )
+    this.spin +=
+      (wanted - this.spin) * (1 - Math.exp(-dt / (sweep.ease * hurry)))
+    this.heading += this.spin * dt
+    const lean = Math.max(-1, Math.min(1, this.spin / settings.turnRate))
+    this.bank += (lean - this.bank) * (1 - Math.exp(-dt / 0.8))
+  }
+
+  /**
+   * Whether its target lies so close beside or behind it that its widest curve would only take
+   * it round and round the target.
+   */
+  private cannotReachTarget(): boolean {
+    const { sweep } = this.settings
+    if (!sweep) return false
+    const dx = this.targetX - this.x
+    const dy = this.targetY - this.y
+    const turn = Math.abs(wrapAngle(Math.atan2(dy, dx) - this.heading))
+    return (
+      turn > Math.PI * 0.5 && Math.hypot(dx, dy) < sweep.radius * this.size * 2
+    )
   }
 
   private startle(x: number, y: number, strength: number): void {
@@ -210,9 +314,20 @@ export abstract class Glider {
       this.scale
   }
 
+  /**
+   * Picks a place to head for. A kind that sweeps round prefers one roughly ahead, so that it
+   * carries on in long curves rather than doubling back.
+   */
   private pickTarget(): void {
-    this.targetX = this.bounds.width * (0.25 + this.random() * 0.5)
-    this.targetY = this.bounds.height * (0.25 + this.random() * 0.5)
+    const tries = this.settings.sweep ? 6 : 1
+    for (let i = 0; i < tries; i++) {
+      this.targetX = this.bounds.width * (0.25 + this.random() * 0.5)
+      this.targetY = this.bounds.height * (0.25 + this.random() * 0.5)
+      const dx = this.targetX - this.x
+      const dy = this.targetY - this.y
+      const turn = Math.abs(wrapAngle(Math.atan2(dy, dx) - this.heading))
+      if (turn < Math.PI * 0.6 && Math.hypot(dx, dy) > this.size) break
+    }
     this.retargetAt = this.time + 8 + this.random() * 6
   }
 }
