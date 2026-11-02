@@ -388,6 +388,13 @@ a {
    * paper than the water, so the tanks read as lit windows in a dim hall.
    */
   --jelly-floor: #e7ddc7;
+  /*
+   * The ocean tank's floor, far below the creatures: the light it gives back, added to the
+   * water (black adds none), and the shadows the creatures cast on it, with their opacity.
+   */
+  --jelly-seabed: #000000;
+  --jelly-shadow: #6b5a3c;
+  --jelly-shadow-alpha: 0.16;
   --jelly-glow: 0;
   /*
    * Squares behind lit characters: their opacity, and the gap around each. On paper they join
@@ -411,6 +418,9 @@ a {
   --jelly-accent: #ab9dff;
   --jelly-gold: #f5a45a;
   --jelly-floor: #0c1a23;
+  --jelly-seabed: #050b0b;
+  --jelly-shadow: #010407;
+  --jelly-shadow-alpha: 0.5;
   --jelly-glow: 1;
   --jelly-tile: 0.28;
   --jelly-tile-gap: 1;

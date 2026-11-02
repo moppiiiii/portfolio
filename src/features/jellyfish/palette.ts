@@ -7,6 +7,11 @@ export type Palette = {
   accent: string
   /** Goldfish orange, for the patches and fins of the goldfish. */
   gold: string
+  /** Light the ocean tank's floor gives back, added to the water (black for none). */
+  seabed: string
+  /** Shadows cast on the ocean tank's floor, and their opacity where darkest. */
+  shadow: string
+  shadowAlpha: number
   /** Whether marks glow, as in the dark (deep-sea) theme. */
   glow: boolean
   /** Opacity of the square behind a fully lit character cell, 0 for none. */
@@ -39,6 +44,9 @@ export function readPalette(element: Element): Palette {
     ink: read('--jelly-ink', '#24324a'),
     accent: read('--jelly-accent', '#b5523b'),
     gold: read('--jelly-gold', '#d9822b'),
+    seabed: read('--jelly-seabed', '#000000'),
+    shadow: read('--jelly-shadow', '#6b5a3c'),
+    shadowAlpha: Number(read('--jelly-shadow-alpha', '0')) || 0,
     glow: read('--jelly-glow', '0') === '1',
     tile: Number(read('--jelly-tile', '0')) || 0,
     tileGap: Number(read('--jelly-tile-gap', '1')) || 0,

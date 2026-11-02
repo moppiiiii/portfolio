@@ -39,6 +39,26 @@ const GLYPHS = [...new Set([...RAMP.flat(), 'o'])]
 const EYE_GLYPH = GLYPHS.indexOf('o')
 
 /**
+ * How large each kind's shadow on its tank's floor looks next to the creature. Seen from above,
+ * the floor lies further off than the creature, so a shadow cast straight down shows smaller
+ * and nearer the middle of the tank, the more so the higher the creature swims.
+ */
+const SHADOW_SCALE = {
+  jellyfish: 0.9,
+  goldfish: 0.95,
+  ray: 0.88,
+  shark: 0.93,
+  dolphin: 0.87,
+  turtle: 0.9,
+}
+/** The shadows are painted at this share of the screen's size; stretched, they stay soft. */
+const SHADOW_RESOLUTION = 1 / 4
+/** A shadow's darkness for a fully painted body, before the palette's opacity. */
+const SHADOW_DEPTH = 1.4
+/** How far (px) a shadow's edge is softened: light from above comes from all over the ceiling. */
+const SHADOW_BLUR = 5
+
+/**
  * A cell given a character of its own, whatever the brightness there makes of it, in one of the
  * palette's colours (0 ink, 1 accent, 2 gold).
  */
@@ -115,6 +135,8 @@ export class AsciiRenderer implements JellyfishRenderer {
   /** Brightness maps of pictures, per image, for the current palette. */
   private pictures = new WeakMap<HTMLImageElement, HTMLCanvasElement>()
   private readonly rippleSample: RippleSample = { dx: 0, dy: 0, light: 0 }
+  /** Small canvas the creatures' shadows on their tanks' floors are painted into. */
+  private shadows: CanvasRenderingContext2D | undefined
   /** Per cell, the share of brightness kept because of text over it (1 = no text nearby). */
   private textShade = new Float32Array(0)
 
@@ -127,6 +149,11 @@ export class AsciiRenderer implements JellyfishRenderer {
     this.cols = Math.ceil(width / this.cellWidth)
     this.rows = Math.ceil(height / this.cellHeight)
     this.textShade = new Float32Array(this.cols * this.rows)
+    const shadows = document.createElement('canvas')
+    shadows.width = Math.max(2, Math.round(width * SHADOW_RESOLUTION))
+    shadows.height = Math.max(2, Math.round(height * SHADOW_RESOLUTION))
+    this.shadows =
+      shadows.getContext('2d', { willReadFrequently: true }) ?? undefined
 
     const field = document.createElement('canvas')
     field.width = this.cols * SUPERSAMPLE
@@ -268,8 +295,9 @@ export class AsciiRenderer implements JellyfishRenderer {
       field.canvas.height,
     ).data
 
-    // 2. Water and grid.
+    // 2. Water and grid, and the tanks' floors with the creatures' shadows on them.
     this.drawWater(ctx, palette, backdrop, frames, shortSide)
+    this.drawFloors(ctx, palette, group, view, sides)
 
     // 3. One tile and one character per lit cell.
     const {
@@ -404,6 +432,175 @@ export class AsciiRenderer implements JellyfishRenderer {
   }
 
   /**
+   * The floor of every tank, far below its creatures: the light it gives back, then the
+   * creatures' shadows on it. Each shadow is the creature's own body, cast straight down by the
+   * light above, and seen from above a little smaller and nearer the middle of its tank (see
+   * `SHADOW_SCALE`), softened at the edges.
+   */
+  private drawFloors(
+    ctx: CanvasRenderingContext2D,
+    palette: Palette,
+    group: readonly Jellyfish[],
+    view: View,
+    sides: SideTanks | undefined,
+  ) {
+    const g = this.shadows
+    if (!g) return
+    const { width, height } = g.canvas
+    const toShadowX = width / this.width
+    const toShadowY = height / this.height
+    /** The view the floor is seen through, for shadows `scale` the size of their creatures. */
+    const below = (through: View, scale: number): View => ({
+      ...through,
+      zoom: through.zoom * scale,
+      offsetX: through.offsetX + (this.width / 2) * through.zoom * (1 - scale),
+      offsetY: through.offsetY + (this.height / 2) * through.zoom * (1 - scale),
+    })
+    /** Each tank: the view it is seen through, and how its creatures cast their shadows. */
+    const tanks: { view: View; cast: () => void }[] = [
+      {
+        view,
+        cast: () => {
+          const floor = below(view, SHADOW_SCALE.jellyfish)
+          for (const one of group) {
+            this.placeBody(g, floor, one, toShadowX, toShadowY)
+            this.paintJellyfish(g, one, floor)
+          }
+        },
+      },
+    ]
+    const { school, rays, ocean } = sides ?? {}
+    if (school) {
+      tanks.push({
+        view: school.view,
+        cast: () => {
+          const floor = below(school.view, SHADOW_SCALE.goldfish)
+          for (const one of school.fish) {
+            this.placeBody(g, floor, one, toShadowX, toShadowY)
+            this.paintFish(g, one, floor)
+          }
+        },
+      })
+    }
+    if (rays) {
+      tanks.push({
+        view: rays.view,
+        cast: () => {
+          const floor = below(rays.view, SHADOW_SCALE.ray)
+          for (const one of rays.rays) {
+            this.placeBody(g, floor, one, toShadowX, toShadowY)
+            this.paintRay(g, one, floor)
+          }
+        },
+      })
+    }
+    if (ocean) {
+      tanks.push({
+        view: ocean.view,
+        cast: () => {
+          const shark = below(ocean.view, SHADOW_SCALE.shark)
+          for (const one of ocean.sharks) {
+            this.placeBody(g, shark, one, toShadowX, toShadowY)
+            this.paintShark(g, one, shark)
+          }
+          const dolphin = below(ocean.view, SHADOW_SCALE.dolphin)
+          for (const one of ocean.dolphins) {
+            this.placeBody(g, dolphin, one, toShadowX, toShadowY)
+            this.paintDolphin(g, one, dolphin)
+          }
+          const turtle = below(ocean.view, SHADOW_SCALE.turtle)
+          for (const one of ocean.turtles) {
+            this.placeBody(g, turtle, one, toShadowX, toShadowY)
+            this.paintTurtle(g, one, turtle)
+          }
+          const ray = below(ocean.view, SHADOW_SCALE.ray)
+          for (const one of ocean.rays) {
+            this.placeBody(g, ray, one, toShadowX, toShadowY)
+            this.paintRay(g, one, ray)
+          }
+        },
+      })
+    }
+
+    // Every tank's water, as one shape, so no floor is lit twice where two meet.
+    const traceTanks = (
+      target: CanvasRenderingContext2D,
+      scaleX: number,
+      scaleY: number,
+    ) => {
+      target.beginPath()
+      for (const tank of tanks) {
+        const clip = tank.view.clip ?? {
+          x: 0,
+          y: 0,
+          width: this.width,
+          height: this.height,
+        }
+        target.rect(
+          clip.x * scaleX,
+          clip.y * scaleY,
+          clip.width * scaleX,
+          clip.height * scaleY,
+        )
+      }
+    }
+
+    ctx.save()
+    traceTanks(ctx, 1, 1)
+    ctx.clip()
+    if (!/^#0{6}$/i.test(palette.seabed)) {
+      ctx.globalCompositeOperation = 'lighter'
+      ctx.fillStyle = palette.seabed
+      ctx.fillRect(0, 0, this.width, this.height)
+      ctx.globalCompositeOperation = 'source-over'
+    }
+    if (palette.shadowAlpha > 0) {
+      g.setTransform(1, 0, 0, 1, 0, 0)
+      g.globalCompositeOperation = 'source-over'
+      g.globalAlpha = 1
+      g.fillStyle = '#000'
+      g.fillRect(0, 0, width, height)
+      for (const tank of tanks) {
+        g.save()
+        g.setTransform(1, 0, 0, 1, 0, 0)
+        const clip = tank.view.clip
+        if (clip) {
+          g.beginPath()
+          g.rect(
+            clip.x * toShadowX,
+            clip.y * toShadowY,
+            clip.width * toShadowX,
+            clip.height * toShadowY,
+          )
+          g.clip()
+        }
+        tank.cast()
+        g.restore()
+      }
+      // The bodies' brightness becomes the shadow's darkness, in the shadow's colour.
+      g.setTransform(1, 0, 0, 1, 0, 0)
+      const image = g.getImageData(0, 0, width, height)
+      const { data } = image
+      const [red, green, blue] = toRgb(palette.shadow)
+      const darkest = palette.shadowAlpha * 255
+      for (let i = 0; i < data.length; i += 4) {
+        const body = Math.max(data[i], data[i + 1], data[i + 2]) / 255
+        data[i] = red
+        data[i + 1] = green
+        data[i + 2] = blue
+        data[i + 3] = Math.min(1, body * SHADOW_DEPTH) * darkest
+      }
+      g.putImageData(image, 0, 0)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.filter = `blur(${SHADOW_BLUR}px)`
+      ctx.drawImage(g.canvas, 0, 0, this.width, this.height)
+      ctx.filter = 'none'
+    }
+    ctx.restore()
+  }
+
+  /**
    * Works out, per cell, how much brightness the water keeps under the page text: the least right
    * under and around each text rect, easing back to all of it a little further out, so the water
    * goes quiet under the words without a hard edge. Undefined when there is no text.
@@ -487,9 +684,9 @@ export class AsciiRenderer implements JellyfishRenderer {
     field: CanvasRenderingContext2D,
     view: View,
     { x, y }: { x: number; y: number },
+    toCellsX = SUPERSAMPLE / this.cellWidth,
+    toCellsY = SUPERSAMPLE / this.cellHeight,
   ) {
-    const toCellsX = SUPERSAMPLE / this.cellWidth
-    const toCellsY = SUPERSAMPLE / this.cellHeight
     const body = view.bodyScale ?? 1
     const zoom = view.zoom * body
     field.setTransform(
@@ -1342,6 +1539,17 @@ export class AsciiRenderer implements JellyfishRenderer {
     }
     this.sheet = sheet
   }
+}
+
+/** The red, green and blue (0 to 255) of a colour written as #rrggbb; black otherwise. */
+function toRgb(color: string): [number, number, number] {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color.trim())
+  if (!match) return [0, 0, 0]
+  return [
+    Number.parseInt(match[1], 16),
+    Number.parseInt(match[2], 16),
+    Number.parseInt(match[3], 16),
+  ]
 }
 
 /** The value below which `share` of `count` values (each 0 to 1) fall, from a 256-step histogram. */
