@@ -1,5 +1,5 @@
 /** What lives in the ocean tank, with each kind's scientific name, as on a natural history plate. */
-const SPECIES = [
+export const SPECIES = [
   { name: 'WHALE SHARK', latin: 'Rhincodon typus' },
   { name: 'GREAT HAMMERHEAD', latin: 'Sphyrna mokarran' },
   { name: 'BOTTLENOSE DOLPHIN', latin: 'Tursiops truncatus' },

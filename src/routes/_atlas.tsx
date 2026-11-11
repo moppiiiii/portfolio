@@ -7,6 +7,7 @@ import {
 
 import { AtlasLayout } from '#/features/atlas/atlas-layout'
 import { getAtlas } from '#/features/works/works.functions'
+import { SITE_URL } from '#/lib/seo'
 
 /**
  * Pathless layout for every page of the atlas. Its component stays mounted while moving between
@@ -15,7 +16,24 @@ import { getAtlas } from '#/features/works/works.functions'
 export const Route = createFileRoute('/_atlas')({
   loader: () => getAtlas(),
   head: ({ loaderData }) => ({
-    meta: loaderData ? [{ title: loaderData.author }] : [],
+    meta: loaderData
+      ? [
+          { title: loaderData.author },
+          // Who the site is about, for search engines: the author, their online name, their line
+          // and the places to find them elsewhere.
+          {
+            'script:ld+json': {
+              '@context': 'https://schema.org',
+              '@type': 'Person',
+              name: loaderData.author,
+              alternateName: loaderData.handle,
+              jobTitle: loaderData.tagline.replace(/\.$/, ''),
+              url: SITE_URL,
+              sameAs: loaderData.links.map((link) => link.href),
+            },
+          },
+        ]
+      : [],
   }),
   component: AtlasRoute,
 })

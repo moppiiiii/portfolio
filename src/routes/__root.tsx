@@ -3,6 +3,7 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 
 import { THEME_SCRIPT } from '#/features/theme/theme'
+import { SITE_NAME, siteHead } from '#/lib/seo'
 
 import appCss from '../styles.css?url'
 
@@ -18,8 +19,9 @@ export const Route = createRootRoute({
       },
       // Only for pages outside the atlas, such as a crash; every atlas page sets its own title.
       {
-        title: 'Tomohisa Tanaka',
+        title: SITE_NAME,
       },
+      ...siteHead().meta,
     ],
     links: [
       {
