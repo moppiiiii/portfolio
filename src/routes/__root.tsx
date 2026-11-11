@@ -1,9 +1,11 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { useEffect } from 'react'
 
 import { THEME_SCRIPT } from '#/features/theme/theme'
 import { SITE_NAME, siteHead } from '#/lib/seo'
+import { reloadOnce } from '#/lib/stale-files'
 
 import appCss from '../styles.css?url'
 
@@ -46,6 +48,16 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  // A page's files that a deploy has replaced cannot be fetched: reload once to get the new ones.
+  // Vite reports it here when a page's files are fetched ahead of time or on the way to it.
+  useEffect(() => {
+    const onStaleFiles = (event: Event) => {
+      if (reloadOnce()) event.preventDefault()
+    }
+    window.addEventListener('vite:preloadError', onStaleFiles)
+    return () => window.removeEventListener('vite:preloadError', onStaleFiles)
+  }, [])
+
   return (
     // The theme script below sets a class on <html> before React hydrates it.
     <html lang="en" suppressHydrationWarning>
