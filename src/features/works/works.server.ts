@@ -29,6 +29,11 @@ export type Work = {
   image: string
   imageAlt: string
   notes: PlateNote[]
+  /**
+   * Kept off the site while true: the work's page answers not found, and it is left out of the
+   * contents, the career page and the plate numbering. Set it on works that are not ready.
+   */
+  draft?: boolean
 }
 
 export const atlasText = {
@@ -82,6 +87,8 @@ const body = [
 export const works: Work[] = [
   {
     slug: 'placeholder-one',
+    // A placeholder, kept off the site until a real work replaces it.
+    draft: true,
     title: 'Untitled work I',
     summary: 'Placeholder — a one-line description of the work.',
     body,
@@ -98,6 +105,8 @@ export const works: Work[] = [
   },
   {
     slug: 'placeholder-two',
+    // A placeholder, kept off the site until a real work replaces it.
+    draft: true,
     title: 'Untitled work II',
     summary: 'Placeholder — a one-line description of the work.',
     body,
@@ -114,6 +123,8 @@ export const works: Work[] = [
   },
   {
     slug: 'placeholder-three',
+    // A placeholder, kept off the site until a real work replaces it.
+    draft: true,
     title: 'Untitled work III',
     summary: 'Placeholder — a one-line description of the work.',
     body,
@@ -130,6 +141,8 @@ export const works: Work[] = [
   },
   {
     slug: 'placeholder-four',
+    // A placeholder, kept off the site until a real work replaces it.
+    draft: true,
     title: 'Untitled work IV',
     summary: 'Placeholder — a one-line description of the work.',
     body,
@@ -146,6 +159,8 @@ export const works: Work[] = [
   },
   {
     slug: 'placeholder-five',
+    // A placeholder, kept off the site until a real work replaces it.
+    draft: true,
     title: 'Untitled work V',
     summary: 'Placeholder — a one-line description of the work.',
     body,

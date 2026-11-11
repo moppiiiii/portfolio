@@ -6,13 +6,16 @@ import { toRoman } from '#/lib/roman'
 
 import { atlasText, career, works } from './works.server'
 
+/** The works shown on the site, in order. Drafts stay off it until they are ready. */
+const published = works.filter((work) => !work.draft)
+
 /**
  * Everything every page of the atlas needs: its text, and one entry per plate (work). Plates are
  * numbered in the order of the works, as Roman numerals: PLATE I., PLATE II., ...
  */
 export const getAtlas = createServerFn({ method: 'GET' }).handler(() => ({
   ...atlasText,
-  plates: works.map((work, index) => ({
+  plates: published.map((work, index) => ({
     slug: work.slug,
     title: work.title,
     summary: work.summary,
@@ -32,9 +35,9 @@ export const getAtlas = createServerFn({ method: 'GET' }).handler(() => ({
 export const getPlate = createServerFn({ method: 'GET' })
   .validator(z.object({ slug: z.string().min(1).max(100) }))
   .handler(({ data }) => {
-    const index = works.findIndex((work) => work.slug === data.slug)
+    const index = published.findIndex((work) => work.slug === data.slug)
     if (index === -1) throw notFound()
-    return { ...works[index], numeral: toRoman(index + 1) }
+    return { ...published[index], numeral: toRoman(index + 1) }
   })
 
 /** The career page: its sections, with the works of each entry resolved to their plates. */
@@ -44,10 +47,16 @@ export const getCareer = createServerFn({ method: 'GET' }).handler(() =>
     entries: section.entries.map((entry) => ({
       ...entry,
       plates: (entry.plates ?? []).flatMap((slug) => {
-        const index = works.findIndex((work) => work.slug === slug)
+        const index = published.findIndex((work) => work.slug === slug)
         return index === -1
           ? []
-          : [{ slug, numeral: toRoman(index + 1), title: works[index].title }]
+          : [
+              {
+                slug,
+                numeral: toRoman(index + 1),
+                title: published[index].title,
+              },
+            ]
       }),
     })),
   })),
