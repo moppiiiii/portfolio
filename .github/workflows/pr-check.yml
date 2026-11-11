@@ -1,0 +1,52 @@
+# Checks that a change is ready to merge: lint, format, typecheck and a production build.
+#
+# Runs on every pull request. "Deploy to Cloudflare" (deploy-cloudflare.yml) also calls it, so a
+# push to main goes through the same checks before it is published.
+name: PR check
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A newer push to a pull request replaces the run in progress. When called before a deploy, it
+  # is never cut short.
+  group: pr-check-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Lint, format, typecheck and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      # Vite and Wrangler run on Node; Bun installs the packages from bun.lock.
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.3.14
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Format
+        run: bun run format:check
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build
+        run: bun run build
