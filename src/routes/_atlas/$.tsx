@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 
 import { MissingPage } from '#/features/atlas/missing-page'
+import { hiddenPageHead } from '#/lib/seo'
 
 /**
  * Every address that is not a page of the atlas. It is answered with a 404 status and shown in the
@@ -10,6 +11,6 @@ export const Route = createFileRoute('/_atlas/$')({
   loader: () => {
     throw notFound()
   },
-  head: () => ({ meta: [{ title: 'Not found' }] }),
+  head: () => hiddenPageHead('Not found'),
   notFoundComponent: MissingPage,
 })

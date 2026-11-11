@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The pages for search engines to find. The plates (/plates/<slug>) join once the works are filled in. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://portfolio.tnktmhssrc.workers.dev/</loc></url>
+  <url><loc>https://portfolio.tnktmhssrc.workers.dev/plates</loc></url>
+  <url><loc>https://portfolio.tnktmhssrc.workers.dev/career</loc></url>
+  <url><loc>https://portfolio.tnktmhssrc.workers.dev/about</loc></url>
+  <url><loc>https://portfolio.tnktmhssrc.workers.dev/ocean</loc></url>
+</urlset>
