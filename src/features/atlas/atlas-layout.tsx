@@ -413,7 +413,7 @@ export function AtlasLayout({
     <AtlasContext value={context}>
       <main
         ref={stageRef}
-        className="jellyfish-stage relative isolate min-h-dvh font-mono text-[var(--jelly-ink)]"
+        className="jellyfish-stage relative isolate min-h-dvh overflow-y-clip font-mono text-[var(--jelly-ink)]"
       >
         {/* Always behind the page: the stage is its own stacking context and the water sits at
             its very back, whether or not the page text is animating. */}
