@@ -1,7 +1,10 @@
 import { useAtlas } from './atlas-context'
 import { ScrambleText } from './scramble-text'
 
-/** The about page: the author's name and online name over a short column of text. */
+/**
+ * The about page: the author's name and online name over a short column of text, and under it
+ * the places to find them elsewhere, each named on the left with its address beside it.
+ */
 export function AboutText() {
   const { atlas } = useAtlas()
   return (
@@ -17,6 +20,23 @@ export function AboutText() {
           <p key={paragraph}>{paragraph}</p>
         ))}
       </div>
+      <dl className="mt-8 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 text-xs leading-6">
+        {atlas.links.map((link) => (
+          <div key={link.href} className="contents">
+            <dt className="opacity-(--jelly-faint)">{link.label}</dt>
+            <dd>
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="opacity-(--jelly-soft) transition-opacity hover:underline hover:opacity-100"
+              >
+                {link.href.replace(/^https:\/\//, '')}
+              </a>
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   )
 }

@@ -42,9 +42,11 @@ export const atlasText = {
   /** Shown under the author's name on the frontispiece. */
   tagline: 'Full-stack engineer.',
   about: [
-    'Placeholder. Who you are, what you work on, and how to reach you.',
-    'Placeholder. A second paragraph, such as past work or interests.',
+    "I'm a full-stack engineer. I build web services for both businesses and consumers, from the interface to the server.",
+    'This site is an aquarium I made. Every creature in it is drawn in characters and swims in real time.',
   ],
+  /** Places to find the author elsewhere, listed under the about page's text. */
+  links: [{ label: 'github', href: 'https://github.com/moppiiiii' }],
 }
 
 /** One line of the career page: a place worked or studied at. */
