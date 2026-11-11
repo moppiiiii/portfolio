@@ -4,7 +4,7 @@
  * SITE_URL is the site's public address. public/robots.txt and public/sitemap.xml repeat it, so a
  * move to another domain changes all three.
  */
-export const SITE_URL = 'https://portfolio.tnktmhssrc.workers.dev'
+export const SITE_URL = 'https://portfolio.inenico.dev'
 
 /** The author's name, as in `atlasText.author` (works.server.ts, which pages cannot import). */
 export const SITE_NAME = 'Tomohisa Tanaka'
