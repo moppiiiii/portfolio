@@ -26,6 +26,18 @@ export const Route = createRootRoute({
         rel: 'stylesheet',
         href: appCss,
       },
+      // A smiling face. The ICO holds 16, 32 and 48 px images, transparent outside the face so it
+      // reads on light and dark tabs alike.
+      {
+        rel: 'icon',
+        href: '/favicon.ico',
+        sizes: '16x16 32x32 48x48',
+      },
+      // iOS fills transparency with black, so this one is on a white square.
+      {
+        rel: 'apple-touch-icon',
+        href: '/apple-touch-icon.png',
+      },
     ],
   }),
   shellComponent: RootDocument,
