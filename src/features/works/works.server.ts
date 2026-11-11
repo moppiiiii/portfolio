@@ -73,7 +73,7 @@ export const career: { heading: string; entries: CareerEntry[] }[] = [
   {
     heading: 'Experience',
     entries: [
-      { period: '2025 — present', place: '???' },
+      { period: '2025 — present', place: 'Undisclosed' },
       { period: '2023 — 2025', place: 'YUMEMI Inc.' },
       { period: '2020 — 2023', place: 'Sky Co., Ltd.' },
     ],
