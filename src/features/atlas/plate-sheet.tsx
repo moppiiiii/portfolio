@@ -97,6 +97,22 @@ export function PlateSheet({ plate }: { plate: Plate }) {
           <dd>{plate.tools}</dd>
           <dt className="opacity-(--jelly-faint)">role</dt>
           <dd>{plate.role}</dd>
+          {/* Set like the links on the about page. */}
+          {plate.url && (
+            <>
+              <dt className="opacity-(--jelly-faint)">url</dt>
+              <dd>
+                <a
+                  href={plate.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="opacity-(--jelly-soft) transition-opacity hover:underline hover:opacity-100"
+                >
+                  {plate.url.replace(/^https:\/\//, '')}
+                </a>
+              </dd>
+            </>
+          )}
         </dl>
         <div className="mt-8 space-y-4 text-[13px] leading-7">
           {plate.body.map((paragraph) => (

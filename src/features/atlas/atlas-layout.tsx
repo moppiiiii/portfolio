@@ -492,7 +492,7 @@ export function AtlasLayout({
               ref={imageRef}
               src={plate.image}
               alt={plate.imageAlt}
-              className="invisible absolute bg-(--jelly-water) opacity-0 shadow-[0_0_0_12px_var(--jelly-water)] transition-opacity duration-700 ease-out data-settled:opacity-100 motion-reduce:transition-none"
+              className="invisible absolute rounded-xl bg-(--jelly-water) opacity-0 shadow-[0_0_0_12px_var(--jelly-water)] transition-opacity duration-700 ease-out data-settled:opacity-100 motion-reduce:transition-none"
             />
           )}
           <svg aria-hidden="true" className="absolute inset-0 size-full">
