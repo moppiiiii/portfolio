@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The pages for search engines to find. The plates (/plates/<slug>) join once the works are filled in. -->
+<!-- The pages for search engines to find, with one line per published work (/plates/<slug>). -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://portfolio.inenico.dev/</loc></url>
   <url><loc>https://portfolio.inenico.dev/plates</loc></url>
+  <url><loc>https://portfolio.inenico.dev/plates/tsukizuki</loc></url>
   <url><loc>https://portfolio.inenico.dev/career</loc></url>
   <url><loc>https://portfolio.inenico.dev/about</loc></url>
   <url><loc>https://portfolio.inenico.dev/ocean</loc></url>
