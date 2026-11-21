@@ -99,15 +99,22 @@ function findTank(layer: HTMLElement, tank: Tank): HTMLElement | undefined {
   )
 }
 
-/** Gap (px) between a picture's edge and the notes beside it. */
+/** Gap (px) between a picture's edge and the notes beside, above or below it. */
 const NOTE_GAP = 28
 /** Space (px) kept between a note and the screen edge. */
 const NOTE_MARGIN = 8
+/** Space (px) kept between two notes set side by side above or below the picture. */
+const NOTE_SPACING = 12
+/** Space (px) between rows of notes above or below the picture. */
+const NOTE_ROW_GAP = 4
 
 const NAV_LINK =
   'opacity-(--jelly-faint) transition-opacity hover:opacity-100 data-[status=active]:opacity-100'
 
 type Point = { x: number; y: number }
+
+/** The stretch of the screen's width a note takes. */
+type Span = { left: number; right: number }
 
 function placeLine(line: SVGLineElement | null, from: Point, to: Point) {
   if (!line) return
@@ -118,14 +125,85 @@ function placeLine(line: SVGLineElement | null, from: Point, to: Point) {
   line.style.visibility = 'visible'
 }
 
-function placeNote(note: HTMLElement | null, corner: Point, toLeft: boolean) {
+/** Moves a note so its top left corner is at `topLeft`. */
+function placeNote(note: HTMLElement | null, topLeft: Point) {
   if (!note) return
-  note.style.transform = `translate(${corner.x}px, ${corner.y}px) translate(${toLeft ? '-100%' : '0'}, -50%)`
+  note.style.transform = `translate(${topLeft.x}px, ${topLeft.y}px)`
   note.style.visibility = 'visible'
 }
 
 function hide(element: HTMLElement | SVGElement | null) {
   if (element) element.style.visibility = 'hidden'
+}
+
+/** A note set above or below the picture, with its row counted out from the picture (0 nearest). */
+type Stacked = Span & { row: number }
+
+/** Whether a vertical line at `x` would run through, or brush, a note taking `span`. */
+function covers(span: Span, x: number) {
+  return x > span.left - NOTE_SPACING / 2 && x < span.right + NOTE_SPACING / 2
+}
+
+/**
+ * Sets out the notes on one side of the picture, above or below it, given the point each describes
+ * (`x`) and its width. No two notes overlap, and no line runs through a note nearer the picture:
+ * each note is tried centred on its point, then ending at it, then starting from it, nearest row
+ * first, and a place that covers the point of a note not yet placed is taken only when no other
+ * is free. Only when points crowd closer than a note is wide can a line still cross a note.
+ */
+function stackNotes(
+  notes: readonly { x: number; width: number }[],
+  screenWidth: number,
+): Stacked[] {
+  const placed: Stacked[] = []
+  const byPoint = notes.map((_, index) => index)
+  byPoint.sort((a, b) => notes[a].x - notes[b].x)
+  for (const index of byPoint) {
+    const { x, width } = notes[index]
+    const candidates = [x - width / 2, x - width, x].map((start) => {
+      const left = Math.max(
+        NOTE_MARGIN,
+        Math.min(start, screenWidth - NOTE_MARGIN - width),
+      )
+      return { left, right: left + width }
+    })
+    const rowCount = placed.reduce(
+      (count, other) => Math.max(count, other.row + 1),
+      0,
+    )
+    // `every` passes over the notes not placed yet.
+    const fits = (span: Span, row: number) =>
+      placed.every((other, otherIndex) => {
+        if (other.row === row)
+          return (
+            span.right + NOTE_SPACING <= other.left ||
+            span.left >= other.right + NOTE_SPACING
+          )
+        // A note nearer the picture must not lie on this note's line, nor this one on the line of
+        // a note further out.
+        return other.row < row
+          ? !covers(other, x)
+          : !covers(span, notes[otherIndex].x)
+      })
+    // The notes still to place may end up further out, so their lines must stay clear too.
+    const clearOfUnplaced = (span: Span) =>
+      notes.every(
+        (other, otherIndex) =>
+          otherIndex === index ||
+          otherIndex in placed ||
+          !covers(span, other.x),
+      )
+    const choose = (strict: boolean) => {
+      for (let row = 0; row <= rowCount; row++)
+        for (const span of candidates)
+          if (fits(span, row) && (!strict || clearOfUnplaced(span)))
+            return { ...span, row }
+      return undefined
+    }
+    placed[index] = choose(true) ??
+      choose(false) ?? { ...candidates[0], row: rowCount }
+  }
+  return placed
 }
 
 /**
@@ -354,8 +432,10 @@ export function AtlasLayout({
   const plateImage = plate?.image
 
   /**
-   * Lays the work's image exactly over its drawing in the water and sets the notes out beside it,
-   * each on the side nearer the point it describes.
+   * Lays the work's image exactly over its drawing in the water and sets the notes out around it,
+   * each joined by a line to the point it describes. The notes sit beside the picture, on the side
+   * nearer their point, when every one of them fits there. On narrow screens, where they do not,
+   * they sit above or below it instead, nearer their point, in rows so that none overlap.
    *
    * The drawing in characters is how the picture arrives: once it has finished spreading or
    * fading in, the image itself fades in over it and stays. A frame still showing the previous
@@ -380,26 +460,60 @@ export function AtlasLayout({
         if (picture.settled) image.dataset.settled = ''
       }
       const screenWidth = document.documentElement.clientWidth
-      notes.forEach((note, index) => {
-        const label = noteRefs.current[index]
-        const labelWidth = label?.offsetWidth ?? 0
-        const at = {
-          x: rect.x + note.x * rect.width,
-          y: rect.y + note.y * rect.height,
+      const labels = notes.map((note, index) => {
+        const element = noteRefs.current[index] ?? null
+        return {
+          element,
+          line: noteLineRefs.current[index] ?? null,
+          width: element?.offsetWidth ?? 0,
+          height: element?.offsetHeight ?? 0,
+          toLeft: note.x < 0.5,
+          above: note.y < 0.5,
+          at: {
+            x: rect.x + note.x * rect.width,
+            y: rect.y + note.y * rect.height,
+          },
         }
-        const toLeft = note.x < 0.5
-        const corner = {
-          x: toLeft
-            ? Math.max(rect.x - NOTE_GAP, labelWidth + NOTE_MARGIN)
-            : Math.min(
-                rect.x + rect.width + NOTE_GAP,
-                screenWidth - labelWidth - NOTE_MARGIN,
-              ),
-          y: at.y,
-        }
-        placeNote(label, corner, toLeft)
-        placeLine(noteLineRefs.current[index], at, corner)
       })
+
+      const fitBeside = labels.every(({ toLeft, width }) =>
+        toLeft
+          ? rect.x - NOTE_GAP - width >= NOTE_MARGIN
+          : rect.x + rect.width + NOTE_GAP + width <= screenWidth - NOTE_MARGIN,
+      )
+      if (fitBeside) {
+        for (const { element, line, width, height, toLeft, at } of labels) {
+          const edge = toLeft
+            ? rect.x - NOTE_GAP
+            : rect.x + rect.width + NOTE_GAP
+          placeNote(element, {
+            x: toLeft ? edge - width : edge,
+            y: at.y - height / 2,
+          })
+          placeLine(line, at, { x: edge, y: at.y })
+        }
+        return
+      }
+
+      for (const above of [true, false]) {
+        const side = labels.filter((label) => label.above === above)
+        const stacked = stackNotes(
+          side.map(({ at, width }) => ({ x: at.x, width })),
+          screenWidth,
+        )
+        side.forEach(({ element, line, height, at }, index) => {
+          const { left, right, row } = stacked[index]
+          const offset = NOTE_GAP + row * (height + NOTE_ROW_GAP)
+          const top = above
+            ? rect.y - offset - height
+            : rect.y + rect.height + offset
+          placeNote(element, { x: left, y: top })
+          placeLine(line, at, {
+            x: Math.max(left, Math.min(at.x, right)),
+            y: above ? top + height : top,
+          })
+        })
+      }
     },
     [notes, plateImage],
   )
